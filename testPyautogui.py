@@ -7,14 +7,12 @@ import random
 from Constance import *
 import time
 import pytesseract
-import numpy as np
+
+from ToolBox import *
 
 import cv2
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe'
-
-# pyautogui.FAILSAFE = True
-# pyautogui.PAUSE = 0.15      # 启用决策延时
 
 action_dim = 14
 keep_down_time = 0.01
@@ -28,29 +26,32 @@ def get_frame():
     frame = pyautogui.screenshot()
     frame = frame.resize((820, 462))
 
-    # 提取kill-die的信息
-    KD_info_region = (590, 15, 640, 35)
-    KD_info_img = frame.crop(KD_info_region)
-    KD_info = pytesseract.image_to_string(KD_info_img)
-
-    kill, die = KD_info.split('vs')
-    kill, die = int(kill), int(die)
-
     # 提取当前血量信息
-    hp_info_region = (375, 145, 455, 155)
+    hp_info_region = (374, 154, 455, 163)
     hp_info_img = frame.crop(hp_info_region)
-    hp_info_img.save('test.png')
+    # hp_info_img.save('hp_info.png')
+    hp_info = extract_hp(np.asarray(hp_info_img))
+
+    # 人头比
+    hp_info_region = (590, 15, 640, 35)
+    hp_info_img = frame.crop(hp_info_region)
+    # hp_info_img.save('kd_info.png')
 
     img = cv2.cvtColor(np.asarray(frame), cv2.COLOR_RGB2BGR)
 
-    img = cv2.rectangle(img, (375, 150), (455, 165), color=(10, 10, 255), thickness=2)
+    """ 血量信息 """
+    img = cv2.rectangle(img, (374, 154), (455, 163), color=(10, 10, 255), thickness=2)
+    img = cv2.putText(img, 'HP: %.2f' % hp_info, (465, 163), cv2.FONT_HERSHEY_DUPLEX, 0.35, (10, 10, 255), 1)
 
-    return img, kill, die
+    """ 人头信息 """
+    img = cv2.rectangle(img, (590, 15), (640, 35), color=(10, 10, 255), thickness=2)    # 人头比
+
+    return img, hp_info
 
 
 def main():
     while True:
-        frame, *_ = get_frame()
+        frame, hp_info = get_frame()
 
         random_action_idx = random.randint(0, action_dim-1)
         action = action_mapping[random_action_idx]
@@ -69,6 +70,5 @@ def main():
 
 if __name__ == '__main__':
     pyautogui.alert(text='Automatic script is ready. Start to train?', title='AI Scrip')
-    time.sleep(2)
-    # get_frame()
+    time.sleep(1)
     main()
